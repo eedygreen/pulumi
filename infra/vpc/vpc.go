@@ -48,7 +48,8 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 
 	if len(isVpcAlreadyExist.Ids) > 0 {
 		vpcId = pulumi.ID(isVpcAlreadyExist.Ids[0]).ToIDOutput()
-		fmt.Println("VPC already exists with ID: ", vpcId)
+		fmt.Println("VPC already exists with ID: ", pulumi.StringOutput(vpcId))
+		return vpcId, nil
 	} else {
 
 		fmt.Println("VPC does not exist, creating a new one...")
@@ -94,7 +95,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 	if err != nil {
 		return pulumi.IDOutput{}, err
 	}
-	ctx.Export("CidrBlock", pulumi.String(parameters.Cidr))
+
 	ctx.Export("VpcId", vpcId)
 	ctx.Export("PublicSubnetIds", publicSubnet.ID())
 	ctx.Export("PrivateSubnetIds", privateSubnet.ID())
