@@ -22,11 +22,25 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 
 	parameters := Parameters{
 		Name:               config.New(ctx, "").Require("vpcName"),
-		Cidr:               config.New(ctx, "").Get("vpcCIDR"),
+		Cidr:               config.New(ctx, "").Require("vpcCIDR"),
 		Env:                ctx.Stack(),
 		VpcTagKey:          "Name",
-		PublicSubnetCirdr:  config.New(ctx, "").Get("publicSubnetCIDR"),
-		PrivateSubnetCirdr: config.New(ctx, "").Get("privateSubnetCIDR"),
+		PublicSubnetCirdr:  config.New(ctx, "").Require("publicSubnetCIDR"),
+		PrivateSubnetCirdr: config.New(ctx, "").Require("privateSubnetCIDR"),
+	}
+
+	switch {
+	case parameters.Name == "":
+		return pulumi.IDOutput{}, fmt.Errorf("vpcName is required in pulumi config")
+
+	case parameters.Cidr == "":
+		return pulumi.IDOutput{}, fmt.Errorf("vpcCIDR is required in pulumi config")
+
+	case parameters.PublicSubnetCirdr == "":
+		return pulumi.IDOutput{}, fmt.Errorf("publicSubnetCIDR is required in pulumi config")
+
+	case parameters.PrivateSubnetCirdr == "":
+		return pulumi.IDOutput{}, fmt.Errorf("privateSubnetCIDR is required in pulumi config")
 	}
 
 	Azs, err := aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{
@@ -66,7 +80,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 		fmt.Println("VPC does not exist, creating a new one...")
 
 		vpc, err := ec2.NewVpc(ctx, parameters.Name, &ec2.VpcArgs{
-			CidrBlock: pulumi.StringPtr(parameters.Cidr),
+			CidrBlock: pulumi.String(parameters.Cidr),
 			Tags: pulumi.StringMap{
 				"Name": pulumi.String(parameters.Name),
 			},
@@ -81,7 +95,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 
 	publicSubnet, err := ec2.NewSubnet(ctx, "publicSubnet", &ec2.SubnetArgs{
 		VpcId:            vpc.ID(),
-		CidrBlock:        pulumi.StringPtr(parameters.PublicSubnetCirdr),
+		CidrBlock:        pulumi.String(parameters.PublicSubnetCirdr),
 		AvailabilityZone: pulumi.String(Azs.Names[0]),
 		Tags: pulumi.StringMap{
 			"Name": pulumi.Sprintf("%s-public-subnet-%s", parameters.Name, parameters.Env),
@@ -94,7 +108,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 
 	privateSubnet, err := ec2.NewSubnet(ctx, "privateSubnet", &ec2.SubnetArgs{
 		VpcId:            vpc.ID(),
-		CidrBlock:        pulumi.StringPtr(parameters.PrivateSubnetCirdr),
+		CidrBlock:        pulumi.String(parameters.PrivateSubnetCirdr),
 		AvailabilityZone: pulumi.String(Azs.Names[1]),
 
 		Tags: pulumi.StringMap{
