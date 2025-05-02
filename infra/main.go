@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/eedygreen/pulumi/ecs/vpc"
+	"github.com/eedygreen/pulumi/infra/vpc"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 

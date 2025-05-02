@@ -1,8 +1,0 @@
-name: ecs
-description: ecs containers
-runtime: go
-config:
-  pulumi:autonaming:
-    value: 
-      pattern: ${name}-${project}-${stack}
-      enforce: true
