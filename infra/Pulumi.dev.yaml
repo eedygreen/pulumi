@@ -1,0 +1,9 @@
+config:
+  infra:vpcName: pulumi
+  infra:vpcCIDR: 172.21.0.0/16
+  infra:publicSubnetCIDR: 172.21.10.0/24
+  infra:privateSubnetCIDR: 172.21.11.0/24
+  pulumi:autonaming:
+    pattern: ${name}-${project}-${stack}
+    enforce: true
+  aws:region: us-east-2
