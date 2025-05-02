@@ -1,0 +1,8 @@
+name: infra
+description: aws services
+runtime: go
+config:
+  pulumi:autonaming:
+    value: 
+      pattern: ${name}-${project}-${stack}
+      enforce: true
