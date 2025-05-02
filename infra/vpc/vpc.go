@@ -35,7 +35,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 		return pulumi.IDOutput{}, err
 	}
 
-	isVpcAlreadyExist, err := ec2.GetVpcs(ctx, &ec2.GetVpcsArgs{
+	existingVpcs, err := ec2.GetVpcs(ctx, &ec2.GetVpcsArgs{
 		Tags: map[string]string{
 			parameters.VpcTagKey: parameters.Name,
 		},
@@ -44,14 +44,25 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 	if err != nil {
 		return pulumi.IDOutput{}, err
 	}
-	var vpcId pulumi.IDOutput
 
-	if len(isVpcAlreadyExist.Ids) > 0 {
-		vpcId = pulumi.ID(isVpcAlreadyExist.Ids[0]).ToIDOutput()
-		fmt.Println("VPC already exists with ID: ", pulumi.StringOutput(vpcId))
-		return vpcId, nil
+	var vpc *ec2.Vpc
+
+	if len(existingVpcs.Ids) > 0 {
+
+		vpc, err = ec2.NewVpc(ctx, parameters.Name, &ec2.VpcArgs{
+			CidrBlock: pulumi.String(parameters.Cidr),
+			Tags: pulumi.StringMap{
+				"Name": pulumi.String(parameters.Name),
+			},
+		}, pulumi.Import(pulumi.ID(existingVpcs.Ids[0])))
+
+		if err != nil {
+			return pulumi.IDOutput{}, err
+		}
+
+		ctx.Log.Info(fmt.Sprintf("VPC already exists with ID: %v", existingVpcs.Ids[0]), nil)
+
 	} else {
-
 		fmt.Println("VPC does not exist, creating a new one...")
 
 		vpc, err := ec2.NewVpc(ctx, parameters.Name, &ec2.VpcArgs{
@@ -61,16 +72,15 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 			},
 		})
 
-		vpcId = vpc.ID()
-
 		if err != nil {
 			return pulumi.IDOutput{}, err
 		}
-		fmt.Println("Created VPC with ID: ", vpcId)
+		ctx.Log.Info(fmt.Sprintf("Created VPC with ID: %v", vpc.ID()), nil)
+
 	}
 
 	publicSubnet, err := ec2.NewSubnet(ctx, "publicSubnet", &ec2.SubnetArgs{
-		VpcId:            vpcId,
+		VpcId:            vpc.ID(),
 		CidrBlock:        pulumi.StringPtr(parameters.PublicSubnetCirdr),
 		AvailabilityZone: pulumi.String(Azs.Names[0]),
 		Tags: pulumi.StringMap{
@@ -83,7 +93,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 	}
 
 	privateSubnet, err := ec2.NewSubnet(ctx, "privateSubnet", &ec2.SubnetArgs{
-		VpcId:            vpcId,
+		VpcId:            vpc.ID(),
 		CidrBlock:        pulumi.StringPtr(parameters.PrivateSubnetCirdr),
 		AvailabilityZone: pulumi.String(Azs.Names[1]),
 
@@ -96,11 +106,11 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 		return pulumi.IDOutput{}, err
 	}
 
-	ctx.Export("VpcId", vpcId)
+	ctx.Export("VpcId", vpc.ID())
 	ctx.Export("PublicSubnetIds", publicSubnet.ID())
 	ctx.Export("PrivateSubnetIds", privateSubnet.ID())
 	ctx.Export("PublicSubnetAz", publicSubnet.AvailabilityZone)
 	ctx.Export("PrivateSubnetAz", privateSubnet.AvailabilityZone)
 
-	return vpcId, nil
+	return vpc.ID(), nil
 }
