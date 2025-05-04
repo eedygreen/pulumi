@@ -1,10 +1,14 @@
-module github.com/eedygreen/pulumi/infra
+module github.com/eedygreen/pulumi/infra/vpc
 
 go 1.22
 
 toolchain go1.24.0
 
-require github.com/pulumi/pulumi/sdk/v3 v3.166.0
+require (
+	github.com/pulumi/pulumi-aws/sdk/v5 v5.43.0
+	github.com/pulumi/pulumi-aws/sdk/v6 v6.78.0
+	github.com/pulumi/pulumi/sdk/v3 v3.166.0
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -26,7 +30,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
 	github.com/djherbis/times v1.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/fatih/color v1.16.0 // indirect
+	github.com/frankban/quicktest v1.14.6 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.1 // indirect
 	github.com/go-git/go-git/v5 v5.13.1 // indirect
@@ -65,6 +69,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
+	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
