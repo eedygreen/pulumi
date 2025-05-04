@@ -80,12 +80,7 @@ func CreateSubnets(ctx *pulumi.Context, vpc *ec2.Vpc, p *Parameters) ([]*ec2.Sub
 	return []*ec2.Subnet{publicSubnet, privateSubnet}, nil
 }
 
-func CreateVpc(ctx *pulumi.Context, opt ...Parameters) (*ec2.Vpc, error) {
-
-	parameters, err := Validate(ctx, Parameters{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate parameters: %w", err)
-	}
+func CreateVpc(ctx *pulumi.Context, parameters *Parameters) (*ec2.Vpc, error) {
 
 	existingVpcs, err := ec2.GetVpcs(ctx, &ec2.GetVpcsArgs{
 		Tags: map[string]string{

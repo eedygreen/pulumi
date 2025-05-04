@@ -11,14 +11,16 @@ func main() {
 
 	pulumi.Run(func(ctx *pulumi.Context) error {
 
-		Vpc, err := vpc.CreateVpc(ctx, vpc.Parameters{})
-		if err != nil {
-			return fmt.Errorf("failed to create VPC: %v", err)
-		}
 		validConfig, err := vpc.Validate(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to load configurations: %w", err)
 		}
+
+		Vpc, err := vpc.CreateVpc(ctx, validConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create VPC: %v", err)
+		}
+
 		subnets, err := vpc.CreateSubnets(ctx, Vpc, validConfig)
 		if err != nil {
 			return fmt.Errorf("failed to create subnets: %v", err)
