@@ -11,7 +11,7 @@ func main() {
 
 	pulumi.Run(func(ctx *pulumi.Context) error {
 
-		_, err := vpc.CreateVpc(ctx, "awsVpc", vpc.Parameters{})
+		err := vpc.CreateVpc(ctx, vpc.Parameters{})
 		if err != nil {
 			return fmt.Errorf("failed to create VPC: %v", err)
 		}

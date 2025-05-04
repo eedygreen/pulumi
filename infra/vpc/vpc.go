@@ -10,43 +10,48 @@ import (
 )
 
 type Parameters struct {
-	Name               string
-	Cidr               string
-	Env                string
-	VpcTagKey          string
-	PublicSubnetCirdr  string
-	PrivateSubnetCirdr string
+	Name, Cidr, Env, VpcTagKey, PublicSubnetCirdr, PrivateSubnetCirdr string
 }
 
-func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOutput, error) {
+func (p *Parameters) Validate() error {
+	switch {
+	case p.Name == "":
+		return fmt.Errorf("vpcName is required in pulumi config")
 
+	case p.Cidr == "":
+		return fmt.Errorf("vpcCIDR is required in pulumi config")
+
+	case p.PublicSubnetCirdr == "":
+		return fmt.Errorf("publicSubnetCIDR is required in pulumi config")
+
+	case p.PrivateSubnetCirdr == "":
+		return fmt.Errorf("privateSubnetCIDR is required in pulumi config")
+
+	}
+	return nil
+}
+
+func CreateVpc(ctx *pulumi.Context, opt ...Parameters) error {
+	conf := config.New(ctx, "")
 	parameters := Parameters{
-		Name:               config.New(ctx, "").Require("vpcName"),
-		Cidr:               config.New(ctx, "").Require("vpcCIDR"),
+		Name:               conf.Require("vpcName"),
+		Cidr:               conf.Require("vpcCIDR"),
 		Env:                ctx.Stack(),
 		VpcTagKey:          "Name",
-		PublicSubnetCirdr:  config.New(ctx, "").Require("publicSubnetCIDR"),
-		PrivateSubnetCirdr: config.New(ctx, "").Require("privateSubnetCIDR"),
+		PublicSubnetCirdr:  conf.Require("publicSubnetCIDR"),
+		PrivateSubnetCirdr: conf.Require("privateSubnetCIDR"),
 	}
 
-	switch {
-	case parameters.Name == "":
-		return pulumi.IDOutput{}, fmt.Errorf("vpcName is required in pulumi config")
-
-	case parameters.Cidr == "":
-		return pulumi.IDOutput{}, fmt.Errorf("vpcCIDR is required in pulumi config")
-
-	case parameters.PublicSubnetCirdr == "":
-		return pulumi.IDOutput{}, fmt.Errorf("publicSubnetCIDR is required in pulumi config")
-
-	case parameters.PrivateSubnetCirdr == "":
-		return pulumi.IDOutput{}, fmt.Errorf("privateSubnetCIDR is required in pulumi config")
+	err := parameters.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate parameters: %w", err)
 	}
 
 	Azs, err := aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{
-		State: pulumi.StringRef("available")}, nil)
+		State: pulumi.StringRef("available")})
+
 	if err != nil {
-		return pulumi.IDOutput{}, fmt.Errorf("failed getting AZs: %w", err)
+		return fmt.Errorf("failed getting AZs: %w", err)
 	}
 
 	existingVpcs, err := ec2.GetVpcs(ctx, &ec2.GetVpcsArgs{
@@ -56,7 +61,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 	})
 
 	if err != nil {
-		return pulumi.IDOutput{}, fmt.Errorf("failed importing existing vpc: %w", err)
+		return fmt.Errorf("failed importing existing vpc: %w", err)
 	}
 
 	var vpc *ec2.Vpc
@@ -71,13 +76,13 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 		}, pulumi.Import(pulumi.ID(existingVpcs.Ids[0])))
 
 		if err != nil {
-			return pulumi.IDOutput{}, fmt.Errorf("failed importing existing VPC: %w", err)
+			return fmt.Errorf("failed importing existing VPC: %w", err)
 		}
 
 		ctx.Log.Info(fmt.Sprintf("VPC already exists with ID: %v", existingVpcs.Ids[0]), nil)
 
 	} else {
-		fmt.Println("VPC does not exist, creating a new one...")
+		ctx.Log.Debug("VPC does not exist, creating a new one...", nil)
 
 		vpc, err = ec2.NewVpc(ctx, parameters.Name, &ec2.VpcArgs{
 			CidrBlock: pulumi.String(parameters.Cidr),
@@ -87,7 +92,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 		})
 
 		if err != nil {
-			return pulumi.IDOutput{}, fmt.Errorf("failed creating VPC: %w", err)
+			return fmt.Errorf("failed creating VPC: %w", err)
 		}
 		ctx.Log.Info(fmt.Sprintf("Created VPC with ID: %v", vpc.ID()), nil)
 
@@ -103,7 +108,7 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 	}, pulumi.Parent(vpc))
 
 	if err != nil {
-		return pulumi.IDOutput{}, fmt.Errorf("failed creating public subnet: %w", err)
+		return fmt.Errorf("failed creating public subnet: %w", err)
 	}
 
 	privateSubnet, err := ec2.NewSubnet(ctx, "privateSubnet", &ec2.SubnetArgs{
@@ -117,14 +122,21 @@ func CreateVpc(ctx *pulumi.Context, name string, opt ...Parameters) (pulumi.IDOu
 	}, pulumi.Parent(vpc))
 
 	if err != nil {
-		return pulumi.IDOutput{}, fmt.Errorf("failed creating private subnet: %w", err)
+		return fmt.Errorf("failed creating private subnet: %w", err)
 	}
-
+	/**
+		internetGateway, err := ec2.NewInternetGateway(ctx, "internetGateway", &ec2.InternetGatewayArgs{
+			Tags: pulumi.StringMap{
+				"Name": pulumi.Sprintf("%s-internet-gateway-%s", parameters.Name, parameters.Env),
+			},
+			VpcId: vpc.ID(),
+		}, pulumi.Parent(vpc))
+	**/
 	ctx.Export("VpcId", vpc.ID())
 	ctx.Export("PublicSubnetIds", publicSubnet.ID())
 	ctx.Export("PrivateSubnetIds", privateSubnet.ID())
 	ctx.Export("PublicSubnetAz", publicSubnet.AvailabilityZone)
 	ctx.Export("PrivateSubnetAz", privateSubnet.AvailabilityZone)
 
-	return vpc.ID(), nil
+	return nil
 }
