@@ -13,16 +13,15 @@ type Parameters struct {
 	Name, Cidr, Env, VpcTagKey, PublicSubnetCirdr, PrivateSubnetCirdr string
 }
 
-func Validate(ctx *pulumi.Context, opts ...Parameters) (*Parameters, error) {
+func (p *Parameters) Validate(ctx *pulumi.Context, opts ...Parameters) (*Parameters, error) {
 	conf := config.New(ctx, "")
-	p := Parameters{
-		Name:               conf.Require("vpcName"),
-		Cidr:               conf.Require("vpcCIDR"),
-		Env:                ctx.Stack(),
-		VpcTagKey:          "Name",
-		PublicSubnetCirdr:  conf.Require("publicSubnetCIDR"),
-		PrivateSubnetCirdr: conf.Require("privateSubnetCIDR"),
-	}
+
+	p.Name = conf.Require("vpcName")
+	p.Cidr = conf.Require("vpcCIDR")
+	p.Env = ctx.Stack()
+	p.VpcTagKey = "Name"
+	p.PublicSubnetCirdr = conf.Require("publicSubnetCIDR")
+	p.PrivateSubnetCirdr = conf.Require("privateSubnetCIDR")
 
 	switch {
 	case p.Name == "":
@@ -38,7 +37,7 @@ func Validate(ctx *pulumi.Context, opts ...Parameters) (*Parameters, error) {
 		return nil, fmt.Errorf("privateSubnetCIDR is required in pulumi config")
 
 	}
-	return &p, nil
+	return p, nil
 }
 
 func CreateSubnets(ctx *pulumi.Context, vpc *ec2.Vpc, p *Parameters) ([]*ec2.Subnet, error) {

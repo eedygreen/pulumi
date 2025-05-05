@@ -11,7 +11,10 @@ func main() {
 
 	pulumi.Run(func(ctx *pulumi.Context) error {
 
-		validConfig, err := vpc.Validate(ctx)
+		params := &vpc.Parameters{}
+
+		validConfig, err := params.Validate(ctx)
+
 		if err != nil {
 			return fmt.Errorf("failed to load configurations: %w", err)
 		}
