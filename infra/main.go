@@ -13,7 +13,7 @@ func main() {
 
 		params := &vpc.Parameters{}
 
-		validConfig, err := params.Validate(ctx)
+		validConfig, err := params.ValidateParams(ctx)
 
 		if err != nil {
 			return fmt.Errorf("failed to load configurations: %w", err)
