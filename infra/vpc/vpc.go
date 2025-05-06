@@ -13,7 +13,14 @@ type Parameters struct {
 	Name, Cidr, Env, VpcTagKey, PublicSubnetCirdr, PrivateSubnetCirdr string
 }
 
-func (p *Parameters) Validate(ctx *pulumi.Context, opts ...Parameters) (*Parameters, error) {
+// ValidateParams checks the parameters: returns a validated values with Parameters struct.
+//
+//	params := &vpc.Parameters{}
+//
+//	validConfig, err := params.ValidateParams(ctx)
+//
+// If any required parameter is missing, it returns an error.
+func (p *Parameters) ValidateParams(ctx *pulumi.Context, opts ...Parameters) (*Parameters, error) {
 	conf := config.New(ctx, "")
 
 	p.Name = conf.Require("vpcName")
@@ -40,6 +47,11 @@ func (p *Parameters) Validate(ctx *pulumi.Context, opts ...Parameters) (*Paramet
 	return p, nil
 }
 
+// CreateSubnets creates public and private subnets in the VPC.
+//
+//	someListsOfSubnets, err := CreateSubnets(ctx, vpc *ec2.Vpc, *Parameter).
+//
+// It returns a slice of Subnet objects and an error if any occurs.
 func CreateSubnets(ctx *pulumi.Context, vpc *ec2.Vpc, p *Parameters) ([]*ec2.Subnet, error) {
 
 	Azs, err := aws.GetAvailabilityZones(ctx, &aws.GetAvailabilityZonesArgs{
@@ -79,6 +91,11 @@ func CreateSubnets(ctx *pulumi.Context, vpc *ec2.Vpc, p *Parameters) ([]*ec2.Sub
 	return []*ec2.Subnet{publicSubnet, privateSubnet}, nil
 }
 
+// CreateVpc creates a VPC with the specified CIDR block and tags.
+//
+//	newVpc, err := CreateVpc(ctx, parameters *Parameters).
+//
+// It checks if a VPC with the same tag already exists and imports it if found.
 func CreateVpc(ctx *pulumi.Context, parameters *Parameters) (*ec2.Vpc, error) {
 
 	existingVpcs, err := ec2.GetVpcs(ctx, &ec2.GetVpcsArgs{
