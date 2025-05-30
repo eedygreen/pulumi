@@ -7,3 +7,4 @@ config:
     pattern: ${name}-${project}-${stack}
     enforce: true
   aws:region: us-east-2
+  project:vpcName: pulumi
